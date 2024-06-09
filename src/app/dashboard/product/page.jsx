@@ -1,0 +1,406 @@
+"use client";
+import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import MyModal from "../components/MyModal";
+import { FaCheck, FaTrash, FaPlus, FaUndo, FaTrashAlt, FaEdit } from "react-icons/fa";
+import Swal from "sweetalert2";
+import axios from "axios";
+
+export default function Page() {
+  const [productModalOpen, setProductModalOpen] = useState(false);
+  const [trashModalOpen, setTrashModalOpen] = useState(false);
+  const [products, setProducts] = useState([]);
+  const [product, setProduct] = useState({});
+  const [productTrash, setProductTrash] = useState([]);
+  const { data: session } = useSession();
+
+  useEffect(() => {
+    fetchProductData();
+    fetchProductDelete();
+  }, []);
+
+  const errorAlert = (e) => {
+    Swal.fire({
+      title: "Error",
+      text: e.message,
+      icon: "error",
+    });
+  };
+
+  const fetchProductData = async () => {
+    try {
+      const res = await axios.get("/api/product/list");
+      if (res.data.results !== undefined) {
+        setProducts(res.data.results);
+      }
+    } catch (err) {
+      errorAlert(err);
+    }
+  };
+
+  const fetchProductDelete = async () => {
+    try {
+      const res = await axios.get("/api/product/listDelete");
+      if (res.data.results !== undefined) {
+        setProductTrash(res.data.results);
+      }
+    } catch (err) {
+      errorAlert(err);
+    }
+  };
+
+  const handleOpenModalAddProduct = () => {
+    setProductModalOpen(true);
+    setProduct({});
+  };
+
+  const handleOpenModalTrashProduct = () => {
+    setTrashModalOpen(true);
+  };
+
+  const handleEdit = (item) => {
+    setProduct(item);
+    setProductModalOpen(true);
+  };
+
+  const handleCloseModalAddProduct = () => {
+    setProductModalOpen(false);
+  };
+
+  const handleCloseModalTrashProduct = () => {
+    setTrashModalOpen(false);
+  };
+
+  const handleRemove = async (item) => {
+    try {
+      const button = await Swal.fire({
+        title: "Remove",
+        text: "Move it to trash?",
+        icon: "question",
+        showCancelButton: true,
+        showConfirmButton: true,
+        confirmButtonText: "Yes! Do it.",
+        cancelButtonText: "No! Cancel it.",
+      });
+      if (button.isConfirmed) {
+        const res = await axios.delete(`/api/product/remove/${item.id}`, {
+          headers: { "Content-Type": "application/json" },
+        });
+        if (res.data.message === "success") {
+          Swal.fire({
+            title: "Removed",
+            text: "Item has been removed successfully",
+            icon: "success",
+            timer: 1000,
+          });
+          fetchProductData();
+        }
+      }
+    } catch (err) {
+      errorAlert(err);
+    }
+  };
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    if (session) {
+      try {
+        const newProductData = { ...product };
+        newProductData.cost = parseInt(product.cost);
+        newProductData.price = parseInt(product.price);
+
+        let res;
+
+        if (product.id === undefined) {
+          res = await axios.post("/api/product/create", newProductData, {
+            headers: { "Content-Type": "application/json" },
+          });
+        } else {
+          res = await axios.put(
+            `/api/product/update/${product.id}`,
+            newProductData,
+            {
+              headers: { "Content-Type": "application/json" },
+            }
+          );
+        }
+
+        if (res.data.message === "success") {
+          Swal.fire({
+            title: "Success",
+            text:
+              product.id === undefined
+                ? "Add product success"
+                : "Update product success",
+            icon: "success",
+            timer: 1000,
+          });
+          handleCloseModalAddProduct();
+          fetchProductData();
+        }
+      } catch (err) {
+        errorAlert(err);
+      }
+    }
+  };
+
+  const handleRestore = async (id) => {
+    try {
+      const button = await Swal.fire({
+        title: "Restore",
+        text: "Restore this product?",
+        icon: "question",
+        showCancelButton: true,
+        showConfirmButton: true,
+        confirmButtonText: "Yes, restore it.",
+        cancelButtonText: "No! Cancel it.",
+      });
+      if (button.isConfirmed) {
+        const res = await axios.put(`/api/product/restore/${id}`, null, {
+          headers: { "Content-Type": "application/json" },
+        });
+        if (res.data.message === "success") {
+          Swal.fire({
+            title: "Success",
+            text: "Restored success",
+            icon: "success",
+            timer: 1000,
+          });
+          fetchProductData();
+          fetchProductDelete();
+          handleCloseModalTrashProduct();
+        }
+      }
+    } catch (err) {
+      errorAlert(err);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      const button = await Swal.fire({
+        title: "Delete",
+        text: "Are you sure to delete it?",
+        icon: "question",
+        showCancelButton: true,
+        showConfirmButton: true,
+        confirmButtonText: "Yes, delete it.",
+        cancelButtonText: "No! Cancel it.",
+      });
+      if (button.isConfirmed) {
+        const res = await axios.delete(`/api/product/delete/${id}`, {
+          headers: { "Content-Type": "application/json" },
+        });
+        if (res.data.message === "success") {
+          Swal.fire({
+            title: "Success",
+            text: "Deleted product success",
+            icon: "success",
+            timer: 1000,
+          });
+          fetchProductDelete();
+          fetchProductData();
+        }
+      }
+    } catch (err) {
+      errorAlert(err);
+    }
+  };
+
+  return (
+    <div className="container mx-auto p-4">
+      <div className="text-3xl font-bold mb-4">Product Manage</div>
+      <div className="mb-6 flex">
+        <button
+          className="bg-green-500 hover:bg-green-400 text-white font-bold py-2 px-4 rounded flex items-center mr-3"
+          onClick={handleOpenModalAddProduct}
+        >
+          <FaPlus className="mr-2" />
+          Add Product
+        </button>
+        <button
+          className="bg-red-500 hover:bg-red-400 text-white font-bold py-2 px-4 rounded flex items-center"
+          onClick={handleOpenModalTrashProduct}
+        >
+          <FaTrash className="mr-2" />
+          Trash
+        </button>
+      </div>
+      <table className="table-auto w-full border-collapse">
+        <thead>
+          <tr className="bg-gray-800 text-white">
+            <th className="px-4 py-2 border">Image</th>
+            <th className="px-4 py-2 border">Name</th>
+            <th className="px-4 py-2 border">Cost</th>
+            <th className="px-4 py-2 border">Price</th>
+            <th className="px-4 py-2 border">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {products.length > 0 ? (
+            products.map((item) => (
+              <tr key={item.id} className="bg-white hover:bg-gray-100">
+                <td className="px-4 py-2 border">image</td>
+                <td className="px-4 py-2 border">{item.name}</td>
+                <td className="px-4 py-2 border">{item.cost}</td>
+                <td className="px-4 py-2 border">{item.price}</td>
+                <td className="px-4 py-2 border flex justify-center items-center space-x-2">
+                  <button
+                    className="bg-yellow-500 hover:bg-yellow-400 text-white font-bold py-1 px-2 rounded flex items-center"
+                    onClick={() => handleEdit(item)}
+                  >
+                    <FaEdit className="mr-1" />
+                    Edit
+                  </button>
+                  <button
+                    className="bg-red-500 hover:bg-red-400 text-white font-bold py-1 px-2 rounded flex items-center"
+                    onClick={() => handleRemove(item)}
+                  >
+                    <FaTrashAlt className="mr-1" />
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td colSpan="5" className="px-4 py-8 border text-center text-gray-600 italic">
+                No Products Found
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+
+      <MyModal
+        id="modalProduct"
+        title={product.id === undefined ? "Add Product" : "Edit Product"}
+        isOpen={productModalOpen}
+        onClose={handleCloseModalAddProduct}
+      >
+        <form onSubmit={handleSave}>
+          <div className="mb-4">
+            <label className="block text-gray-700 text-sm font-bold mb-2">
+              Product Name
+            </label>
+            <input
+              type="text"
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              placeholder="Enter product name"
+              value={product.name || ""}
+              onChange={(e) => setProduct({ ...product, name: e.target.value })}
+            />
+          </div>
+          <div className="mb-4">
+            <label className="block text-gray-700 text-sm font-bold mb-2">
+              Cost
+            </label>
+            <input
+              type="number"
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              placeholder="Enter cost"
+              value={product.cost || ""}
+              onChange={(e) => setProduct({ ...product, cost: e.target.value })}
+            />
+          </div>
+          <div className="mb-4">
+            <label className="block text-gray-700 text-sm font-bold mb-2">
+              Price
+            </label>
+            <input
+              type="number"
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              placeholder="Enter price"
+              value={product.price || ""}
+              onChange={(e) =>
+                setProduct({ ...product, price: e.target.value })
+              }
+            />
+          </div>
+          <button
+            className="bg-blue-500 hover:bg-blue-400 text-white font-bold py-2 px-4 rounded flex justify-center items-center"
+            type="submit"
+          >
+            <FaCheck className="mr-1" />
+            Save
+          </button>
+        </form>
+      </MyModal>
+
+      <MyModal
+        id="modalProductTrash"
+        title="Trash"
+        isOpen={trashModalOpen}
+        onClose={handleCloseModalTrashProduct}
+      >
+        <div className="flex flex-col">
+          <div className="-m-1.5 overflow-x-auto">
+            <div className="p-1.5 min-w-full inline-block align-middle">
+              <div className="overflow-hidden shadow-md rounded-lg">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-800">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
+                        Name
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
+                        Cost
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
+                        Price
+                      </th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-white uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {productTrash.length > 0 ? (
+                      productTrash.map((item) => (
+                        <tr key={item.id}>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {item.name}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {item.cost}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {item.price}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <button
+                              type="button"
+                              className="inline-flex items-center gap-x-2 text-sm font-semibold text-blue-600 hover:text-blue-800"
+                              onClick={() => handleRestore(item.id)}
+                            >
+                              <FaUndo className="mr-1" />
+                              Restore
+                            </button>
+                            <button
+                              type="button"
+                              className="inline-flex items-center gap-x-2 text-sm font-semibold text-red-600 hover:text-red-800 ml-2"
+                              onClick={() => handleDelete(item.id)}
+                            >
+                              <FaTrashAlt className="mr-1" />
+                              Delete
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="4" className="px-6 py-4 text-center text-gray-500">
+                          No products in trash
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </MyModal>
+    </div>
+  );
+}
