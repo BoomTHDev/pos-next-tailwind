@@ -6,7 +6,8 @@ import {
   FaUser,
   FaSignOutAlt,
   FaBars,
-  FaPen
+  FaPen,
+  FaHouseUser
 } from "react-icons/fa";
 import Link from "next/link";
 import { useSession, signOut } from 'next-auth/react'
@@ -92,6 +93,15 @@ export default function Sidebar() {
                   }
                 })
               }}>Logout</button>
+          </li>
+          <li className="py-2 flex items-center hover:bg-gray-700 rounded-md px-2">
+            <FaHouseUser />
+            <Link
+              className={`${isOpen ? "block" : "hidden"} ml-2`}
+              href="/home"
+            >
+              Go to home page
+            </Link>
           </li>
         </ul>
       </div>

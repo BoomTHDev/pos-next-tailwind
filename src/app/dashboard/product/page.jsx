@@ -2,7 +2,15 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import MyModal from "../components/MyModal";
-import { FaCheck, FaTrash, FaPlus, FaUndo, FaTrashAlt, FaEdit } from "react-icons/fa";
+import {
+  FaCheck,
+  FaTrash,
+  FaPlus,
+  FaUndo,
+  FaTrashAlt,
+  FaEdit,
+  FaUpload,
+} from "react-icons/fa";
 import Swal from "sweetalert2";
 import axios from "axios";
 
@@ -12,6 +20,9 @@ export default function Page() {
   const [products, setProducts] = useState([]);
   const [product, setProduct] = useState({});
   const [productTrash, setProductTrash] = useState([]);
+  const [image, setImage] = useState(null);
+  const [fileName, setFileName] = useState("");
+  const [imagePreview, setImagePreview] = useState(null);
   const { data: session } = useSession();
 
   useEffect(() => {
@@ -52,10 +63,12 @@ export default function Page() {
   const handleOpenModalAddProduct = () => {
     setProductModalOpen(true);
     setProduct({});
+    setFileName("");
   };
 
   const handleOpenModalTrashProduct = () => {
     setTrashModalOpen(true);
+    fetchProductDelete();
   };
 
   const handleEdit = (item) => {
@@ -106,6 +119,14 @@ export default function Page() {
     if (session) {
       try {
         const newProductData = { ...product };
+        if (image) {
+          const uploadImageName = await handleUpload();
+          if (uploadImageName) {
+            newProductData.image = uploadImageName;
+          } else {
+            throw new Error("Image upload failed");
+          }
+        }
         newProductData.cost = parseInt(product.cost);
         newProductData.price = parseInt(product.price);
 
@@ -116,13 +137,9 @@ export default function Page() {
             headers: { "Content-Type": "application/json" },
           });
         } else {
-          res = await axios.put(
-            `/api/product/update/${product.id}`,
-            newProductData,
-            {
-              headers: { "Content-Type": "application/json" },
-            }
-          );
+          res = await axios.put(`/api/product/update`, newProductData, {
+            headers: { "Content-Type": "application/json" },
+          });
         }
 
         if (res.data.message === "success") {
@@ -207,6 +224,51 @@ export default function Page() {
     }
   };
 
+  const selectedFile = (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      setImage(file);
+      setFileName(file.name);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleUpload = async () => {
+    try {
+      const formData = new FormData();
+      formData.append("image", image);
+
+      const res = await axios.post("/api/product/upload", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      if (res.data.newName !== undefined) {
+        return res.data.newName;
+      } else {
+        throw new Error("Failed to get uploaded image name");
+      }
+    } catch (err) {
+      errorAlert(err);
+    }
+  };
+
+  const showImage = (item) => {
+    if (item.image && item.image !== "") {
+      return (
+        <img
+          src={"/uploads/" + item.image}
+          alt=""
+          className="object-cover rounded"
+          width="150px"
+        />
+      );
+    }
+  };
+
   return (
     <div className="container mx-auto p-4">
       <div className="text-3xl font-bold mb-4">Product Manage</div>
@@ -240,7 +302,7 @@ export default function Page() {
           {products.length > 0 ? (
             products.map((item) => (
               <tr key={item.id} className="bg-white hover:bg-gray-100">
-                <td className="px-4 py-2 border">image</td>
+                <td className="px-4 py-2 border">{showImage(item)}</td>
                 <td className="px-4 py-2 border">{item.name}</td>
                 <td className="px-4 py-2 border">{item.cost}</td>
                 <td className="px-4 py-2 border">{item.price}</td>
@@ -264,7 +326,10 @@ export default function Page() {
             ))
           ) : (
             <tr>
-              <td colSpan="5" className="px-4 py-8 border text-center text-gray-600 italic">
+              <td
+                colSpan="5"
+                className="px-4 py-8 border text-center text-gray-600 italic"
+              >
                 No Products Found
               </td>
             </tr>
@@ -317,6 +382,31 @@ export default function Page() {
               }
             />
           </div>
+          <div className="mb-4">
+            <label className="block text-gray-700 text-sm font-bold mb-2">
+              Upload Image
+            </label>
+            <div className="flex items-center">
+              <label className="cursor-pointer flex items-center bg-gray-800 hover:bg-gray-900 text-white font-bold py-2 px-4 rounded">
+                <FaUpload className="mr-2" />
+                <span>Upload</span>
+                <input type="file" className="hidden" onChange={selectedFile} />
+              </label>
+              <span className="ml-2">{fileName || "No file chosen"}</span>
+            </div>
+          </div>
+          {imagePreview ? (
+              <div className="mt-4 mb-4">
+                <img
+                  src={imagePreview}
+                  alt="Selected Image"
+                  className="max-w-full h-auto rounded"
+                  width='150px'
+                />
+              </div>
+            ) : (
+              showImage(product)
+            )}
           <button
             className="bg-blue-500 hover:bg-blue-400 text-white font-bold py-2 px-4 rounded flex justify-center items-center"
             type="submit"
@@ -389,7 +479,10 @@ export default function Page() {
                       ))
                     ) : (
                       <tr>
-                        <td colSpan="4" className="px-6 py-4 text-center text-gray-500">
+                        <td
+                          colSpan="4"
+                          className="px-6 py-4 text-center text-gray-500"
+                        >
                           No products in trash
                         </td>
                       </tr>
