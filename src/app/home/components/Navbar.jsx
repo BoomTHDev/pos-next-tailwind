@@ -1,10 +1,9 @@
-// app/home/components/Navbar.jsx
-
 "use client";
 
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import Swal from "sweetalert2";
+import { FaRegUser } from "react-icons/fa";
 
 export default function Navbar() {
   const { data: session } = useSession();
@@ -14,13 +13,13 @@ export default function Navbar() {
       <nav className="bg-gray-800 p-4">
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex items-center space-x-6">
-            <Link href="/home" className="text-white text-xl font-bold">
+            <Link href="/home" className="text-white text-2xl font-bold hover:text-gray-300">
               WorkShop
             </Link>
-            <Link href="/home" className="text-white">
+            <Link href="/home" className="text-white hover:text-gray-300">
               Home
             </Link>
-            <Link href="/contact" className="text-white">
+            <Link href="/contact" className="text-white hover:text-gray-300">
               Contact
             </Link>
           </div>
@@ -53,11 +52,12 @@ export default function Navbar() {
               {session ? (
                 <>
                   <button
-                    className="text-white focus:outline-none"
+                    className="text-white flex items-center focus:outline-none hover:text-gray-300"
                     onClick={() =>
                       document.getElementById("dropdown-content").classList.toggle("hidden")
                     }
                   >
+                    <FaRegUser className="mr-2" />
                     {session.user.name}
                   </button>
                   <div
@@ -97,7 +97,7 @@ export default function Navbar() {
                   </div>
                 </>
               ) : (
-                <Link href="/signin" className="bg-blue-500 text-white px-4 py-2 rounded mt-2 md:mt-0">
+                <Link href="/signin" className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors duration-200">
                   Sign In
                 </Link>
               )}

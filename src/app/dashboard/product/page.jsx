@@ -64,6 +64,7 @@ export default function Page() {
     setProductModalOpen(true);
     setProduct({});
     setFileName("");
+    setImagePreview(null)
   };
 
   const handleOpenModalTrashProduct = () => {
@@ -74,6 +75,8 @@ export default function Page() {
   const handleEdit = (item) => {
     setProduct(item);
     setProductModalOpen(true);
+    setImagePreview(null)
+    setFileName("")
   };
 
   const handleCloseModalAddProduct = () => {

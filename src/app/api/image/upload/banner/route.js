@@ -26,7 +26,7 @@ export async function POST(request) {
     const h = pad(myDate.getHours());
     const mi = pad(myDate.getMinutes());
     const s = pad(myDate.getSeconds());
-    const ms = myDate.getMilliseconds().toString().padStart(3, '0');
+    const ms = myDate.getMilliseconds().toString().padStart(3, '0'); // เติมศูนย์ด้านหน้าให้ครบ 3 หลัก
 
     const arrFileName = originalFileName.split('.');
     const ext = arrFileName[arrFileName.length - 1];
