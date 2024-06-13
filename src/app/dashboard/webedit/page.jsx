@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { FaUpload } from "react-icons/fa";
 import axios from "axios";
 import Swal from "sweetalert2";
@@ -9,6 +9,7 @@ export default function Page() {
   const [image, setImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [fileName, setFileName] = useState("");
+  const fileInputRef = useRef(null);
 
   const selectedFile = (e) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -39,7 +40,7 @@ export default function Page() {
     formData.append("image", image);
 
     try {
-      const response = await axios.post("/api/image/upload", formData, {
+      const response = await axios.post("/api/image/upload/banner", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
@@ -70,11 +71,19 @@ export default function Page() {
         <div className="mb-6">
           <h4 className="text-xl font-semibold mb-4">แก้ไขภาพ Banner</h4>
           <div className="flex items-center justify-between mb-4">
-            <button className="flex items-center bg-gray-700 text-white font-bold py-2 px-4 rounded hover:bg-gray-600 transition duration-300">
+            <button
+              className="flex items-center bg-gray-700 text-white font-bold py-2 px-4 rounded hover:bg-gray-600 transition duration-300"
+              onClick={() => fileInputRef.current.click()}
+            >
               <FaUpload className="mr-2" />
               <span>Upload Image</span>
-              <input type="file" className="hidden" onChange={selectedFile} />
             </button>
+            <input
+              type="file"
+              className="hidden"
+              ref={fileInputRef}
+              onChange={selectedFile}
+            />
             <span className="ml-2">{fileName || "No file chosen"}</span>
           </div>
           <div className="flex justify-center items-center mb-4">

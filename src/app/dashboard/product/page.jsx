@@ -274,17 +274,17 @@ export default function Page() {
 
   return (
     <div className="container mx-auto p-4">
-      <div className="text-3xl font-bold mb-4">Product Manage</div>
+      <div className="text-3xl font-bold mb-4 text-white">Product Manage</div>
       <div className="mb-6 flex">
         <button
-          className="bg-green-500 hover:bg-green-400 text-white font-bold py-2 px-4 rounded flex items-center mr-3"
+          className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded flex items-center mr-3 border"
           onClick={handleOpenModalAddProduct}
         >
           <FaPlus className="mr-2" />
           Add Product
         </button>
         <button
-          className="bg-red-500 hover:bg-red-400 text-white font-bold py-2 px-4 rounded flex items-center"
+          className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded flex items-center border"
           onClick={handleOpenModalTrashProduct}
         >
           <FaTrash className="mr-2" />
@@ -304,7 +304,7 @@ export default function Page() {
         <tbody>
           {products.length > 0 ? (
             products.map((item) => (
-              <tr key={item.id} className="bg-white hover:bg-gray-100">
+              <tr key={item.id} className="bg-gray-400 hover:bg-gray-500">
                 <td className="px-4 py-2 border">{showImage(item)}</td>
                 <td className="px-4 py-2 border">{item.name}</td>
                 <td className="px-4 py-2 border">{item.cost}</td>
