@@ -8,7 +8,7 @@ import Swal from "sweetalert2";
 export default function Page() {
   const [image, setImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
-  const [fileName, setFileName] = useState("");
+  const [file, setFile] = useState("");
   const fileInputRef = useRef(null);
 
   const selectedFile = (e) => {
@@ -21,7 +21,7 @@ export default function Page() {
       }
 
       setImage(file);
-      setFileName(file.name);
+      setFile(file.name);
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result);
@@ -51,7 +51,7 @@ export default function Page() {
           icon: "success",
           timer: 1000,
         });
-        setImagePreview(`/uploads/${response.data.newName}`);
+        setImagePreview(response.data.newName);
       } else {
         Swal.fire("Error", "Failed to upload image", "error");
       }
@@ -84,7 +84,7 @@ export default function Page() {
               ref={fileInputRef}
               onChange={selectedFile}
             />
-            <span className="ml-2">{fileName || "No file chosen"}</span>
+            <span className="ml-2">{file || "No file chosen"}</span>
           </div>
           <div className="flex justify-center items-center mb-4">
             {imagePreview ? (

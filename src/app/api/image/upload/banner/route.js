@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
-import { writeFile, mkdir, readdir, unlink } from 'fs/promises';
-import { join } from 'path';
+import { PrismaClient } from '@prisma/client';
+import cloudinary from '@/app/components/cloudinary';
+
+const prisma = new PrismaClient();
 
 export async function POST(request) {
     const formData = await request.formData();
@@ -15,40 +17,39 @@ export async function POST(request) {
         return NextResponse.json({ error: "Invalid file type" }, { status: 400 });
     }
 
-    const buffer = await file.arrayBuffer();
-    const originalFileName = file.name;
-
-    const myDate = new Date();
-    const pad = (n) => (n < 10 ? '0' + n : n);
-    const y = myDate.getFullYear();
-    const m = pad(myDate.getMonth() + 1);
-    const d = pad(myDate.getDate());
-    const h = pad(myDate.getHours());
-    const mi = pad(myDate.getMinutes());
-    const s = pad(myDate.getSeconds());
-    const ms = myDate.getMilliseconds().toString().padStart(3, '0'); // เติมศูนย์ด้านหน้าให้ครบ 3 หลัก
-
-    const arrFileName = originalFileName.split('.');
-    const ext = arrFileName[arrFileName.length - 1];
-    const newFileName = `Banner_${y}${m}${d}${h}${mi}${s}${ms}.${ext}`;
-
-    const uploadDir = join(process.cwd(), "public", "uploads");
-    await mkdir(uploadDir, { recursive: true });
-
-    // ลบไฟล์เก่าที่มี prefix 'Banner_'
-    const files = await readdir(uploadDir);
-    for (const file of files) {
-        if (file.startsWith('Banner_')) {
-            await unlink(join(uploadDir, file));
-        }
-    }
-
-    const filePath = join(uploadDir, newFileName);
-
     try {
-        await writeFile(filePath, Buffer.from(buffer));
-        return NextResponse.json({ newName: newFileName }, { status: 200 });
+        // อัพโหลดไฟล์ไปที่ Cloudinary
+        const fileBuffer = Buffer.from(await file.arrayBuffer());
+        const uploadResponse = await new Promise((resolve, reject) => {
+            cloudinary.uploader.upload_stream(
+                {
+                    upload_preset: 'next-cloud',
+                },
+                (error, result) => {
+                    if (error) {
+                        reject(error);
+                    } else {
+                        resolve(result);
+                    }
+                }
+            ).end(fileBuffer);
+        });
+
+        // เก็บ URL ของรูปภาพในฐานข้อมูล
+        const newBannerImage = await prisma.imageBanner.create({
+            data: {
+                imageUrl: uploadResponse.secure_url,
+                createdAt: new Date(),
+                updateAT: new Date()
+            },
+        });
+
+        // ตรวจสอบค่า newBannerImage
+        console.log('newBannerImage:', newBannerImage);
+
+        return NextResponse.json({ newName: uploadResponse.secure_url }, { status: 200 });
     } catch (err) {
+        console.error('Error uploading image:', err);
         return NextResponse.json({ error: err.message }, { status: 500 });
     }
 }

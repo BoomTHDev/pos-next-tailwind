@@ -1,14 +1,21 @@
 import { NextResponse } from "next/server";
-import fs from 'fs/promises';
-import path from 'path';
+import { PrismaClient } from '@prisma/client';
 
-export async function GET(request) {
+const prisma = new PrismaClient();
+
+export async function GET() {
     try {
-        const directoryPath = path.join(process.cwd(), "public/uploads");
-        const files = await fs.readdir(directoryPath);
-        const promoteFiles = files.filter(file => file.startsWith('Banner_'));
-        const fileList = promoteFiles.map((file, index) => ({ id: index, filename: file }));
-        return NextResponse.json({ results: fileList });
+        const bannerImage = await prisma.imageBanner.findFirst({
+            orderBy: {
+                createdAt: 'desc'
+            }
+        });
+
+        if (!bannerImage) {
+            return NextResponse.json({ results: [] });
+        }
+
+        return NextResponse.json({ results: [{ id: bannerImage.id, image: bannerImage.imageUrl }] });
     } catch (err) {
         return NextResponse.json({ error: err.message }, { status: 500 });
     }

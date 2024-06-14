@@ -38,7 +38,6 @@ export default function Page() {
   const fetchImageBanner = async () => {
     try {
       const res = await axios.get("/api/image/read");
-
       if (res.data.results !== undefined) {
         setImageBanner(res.data.results);
       }
@@ -74,7 +73,7 @@ export default function Page() {
             imageBanner.map((item, index) => (
               <img
                 key={index}
-                src={"/uploads/" + item.filename}
+                src={item.image}
                 alt={`image-${index}`}
                 className="w-full h-auto object-cover rounded-lg shadow-md mb-3"
               />
