@@ -47,14 +47,6 @@ export default function Page() {
     }
   };
 
-  const handleOpenModalCart = () => {
-    setModalOpen(true);
-  };
-
-  const handleCloseModalCart = () => {
-    setModalOpen(false);
-  };
-
   const showImage = (item) => {
     let imgPath = "/default-image.png";
     if (item.image) {

@@ -12,11 +12,11 @@ export async function GET() {
         });
 
         if (!bannerImage) {
-            return NextResponse.json({ results: [] });
+            return NextResponse.json({ results: [] }, { headers: { 'Cache-Control': 'no-store' } });
         }
 
-        return NextResponse.json({ results: [{ id: bannerImage.id, image: bannerImage.imageUrl }] });
+        return NextResponse.json({ results: [{ id: bannerImage.id, image: bannerImage.imageUrl }] }, { headers: { 'Cache-Control': 'no-store' } });
     } catch (err) {
-        return NextResponse.json({ error: err.message }, { status: 500 });
+        return NextResponse.json({ error: err.message }, { status: 500, headers: { 'Cache-Control': 'no-store' } });
     }
 }
