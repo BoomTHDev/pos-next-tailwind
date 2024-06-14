@@ -64,7 +64,7 @@ export default function Page({ params }) {
 
   const showImage = (item) => {
     if (item.image) {
-      const imgPath = "/uploads/" + item.image;
+      const imgPath = item.image;
       return (
         <img
           src={imgPath}
