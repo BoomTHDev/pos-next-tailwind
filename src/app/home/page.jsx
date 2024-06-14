@@ -37,16 +37,16 @@ export default function Page() {
 
   const fetchImageBanner = async () => {
     try {
-      // บังคับให้ไม่ใช้แคชโดยเพิ่มค่าพารามิเตอร์สุ่ม
-      const res = await axios.get(`/api/image/read?timestamp=${new Date().getTime()}`);
-      if (res.data.results !== undefined && res.data.results.length > 0) {
-        setImageBanner(res.data.results[0]);
+      const res = await axios.get('/api/image/read', { headers: { 'Cache-Control': 'no-cache' } })
+      
+      if (res.data.results !== undefined) {
+        setImageBanner(res.data.results);
       }
     } catch (err) {
       errorAlert(err);
     }
   };
-  
+
   const handleOpenModalCart = () => {
     setModalOpen(true);
   };
