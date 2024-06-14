@@ -1,54 +1,28 @@
 import { NextResponse } from 'next/server';
-import { writeFile, mkdir, readdir, unlink } from 'fs/promises';
-import { join } from 'path';
+import { PrismaClient } from '@prisma/client';
+import cloudinary from '@/app/components/cloudinary';
+
+const prisma = new PrismaClient();
 
 export async function POST(request) {
-    const formData = await request.formData();
-    const file = formData.get('image');
+  const data = await request.formData();
+  const file = data.get('file');
+  const productId = data.get('productId');
 
-    if (!file) {
-        return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
-    }
+  try {
+    const uploadResponse = await cloudinary.uploader.upload(file.path, {
+      upload_preset: 'next-cloud',
+    });
 
-    const validMimeTypes = ["image/jpeg", "image/png", "image/gif"];
-    if (!validMimeTypes.includes(file.type)) {
-        return NextResponse.json({ error: "Invalid file type" }, { status: 400 });
-    }
+    const image = await prisma.product.update({
+      where: { id: parseInt(productId) },
+      data: {
+        image: uploadResponse.secure_url,
+      },
+    });
 
-    const buffer = await file.arrayBuffer();
-    const originalFileName = file.name;
-
-    const myDate = new Date();
-    const pad = (n) => (n < 10 ? '0' + n : n);
-    const y = myDate.getFullYear();
-    const m = pad(myDate.getMonth() + 1);
-    const d = pad(myDate.getDate());
-    const h = pad(myDate.getHours());
-    const mi = pad(myDate.getMinutes());
-    const s = pad(myDate.getSeconds());
-    const ms = myDate.getMilliseconds().toString().padStart(3, '0');
-
-    const arrFileName = originalFileName.split('.');
-    const ext = arrFileName[arrFileName.length - 1];
-    const newFileName = `Banner_${y}${m}${d}${h}${mi}${s}${ms}.${ext}`;
-
-    const uploadDir = join(process.cwd(), "public", "uploads");
-    await mkdir(uploadDir, { recursive: true });
-
-    // ลบไฟล์เก่าที่มี prefix 'Banner_'
-    const files = await readdir(uploadDir);
-    for (const file of files) {
-        if (file.startsWith('Banner_')) {
-            await unlink(join(uploadDir, file));
-        }
-    }
-
-    const filePath = join(uploadDir, newFileName);
-
-    try {
-        await writeFile(filePath, Buffer.from(buffer));
-        return NextResponse.json({ newName: newFileName }, { status: 200 });
-    } catch (err) {
-        return NextResponse.json({ error: err.message }, { status: 500 });
-    }
+    return NextResponse.json({ url: image.image });
+  } catch (err) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
 }

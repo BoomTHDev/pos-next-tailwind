@@ -9,7 +9,6 @@ import {
   FaUndo,
   FaTrashAlt,
   FaEdit,
-  FaUpload,
 } from "react-icons/fa";
 import Swal from "sweetalert2";
 import axios from "axios";
@@ -21,8 +20,7 @@ export default function Page() {
   const [product, setProduct] = useState({});
   const [productTrash, setProductTrash] = useState([]);
   const [image, setImage] = useState(null);
-  const [fileName, setFileName] = useState("");
-  const [imagePreview, setImagePreview] = useState(null);
+  const [file, setFile] = useState(null);
   const { data: session } = useSession();
 
   useEffect(() => {
@@ -41,7 +39,7 @@ export default function Page() {
   const fetchProductData = async () => {
     try {
       const res = await axios.get("/api/product/list");
-      if (res.data.results !== undefined) {
+      if (res.data.results) {
         setProducts(res.data.results);
       }
     } catch (err) {
@@ -52,7 +50,7 @@ export default function Page() {
   const fetchProductDelete = async () => {
     try {
       const res = await axios.get("/api/product/listDelete");
-      if (res.data.results !== undefined) {
+      if (res.data.results) {
         setProductTrash(res.data.results);
       }
     } catch (err) {
@@ -63,8 +61,7 @@ export default function Page() {
   const handleOpenModalAddProduct = () => {
     setProductModalOpen(true);
     setProduct({});
-    setFileName("");
-    setImagePreview(null)
+    setFile(null);
   };
 
   const handleOpenModalTrashProduct = () => {
@@ -75,8 +72,7 @@ export default function Page() {
   const handleEdit = (item) => {
     setProduct(item);
     setProductModalOpen(true);
-    setImagePreview(null)
-    setFileName("")
+    setFile(null);
   };
 
   const handleCloseModalAddProduct = () => {
@@ -116,31 +112,35 @@ export default function Page() {
       errorAlert(err);
     }
   };
-
   const handleSave = async (e) => {
     e.preventDefault();
     if (session) {
       try {
-        const newProductData = { ...product };
-        if (image) {
-          const uploadImageName = await handleUpload();
-          if (uploadImageName) {
-            newProductData.image = uploadImageName;
-          } else {
-            throw new Error("Image upload failed");
-          }
+        let imageUrl = "";
+        if (file) {
+          const formData = new FormData();
+          formData.append("file", file);
+          formData.append("upload_preset", "next-cloud");
+
+          const res = await axios.post(
+            "https://api.cloudinary.com/v1_1/df06ylgup/image/upload",
+            formData
+          );
+          imageUrl = res.data.secure_url;
         }
+
+        const newProductData = { ...product };
         newProductData.cost = parseInt(product.cost);
         newProductData.price = parseInt(product.price);
+        newProductData.image = imageUrl; // เก็บ URL ของรูปภาพในข้อมูลผลิตภัณฑ์
 
         let res;
-
         if (product.id === undefined) {
           res = await axios.post("/api/product/create", newProductData, {
             headers: { "Content-Type": "application/json" },
           });
         } else {
-          res = await axios.put(`/api/product/update`, newProductData, {
+          res = await axios.put(`/api/product/update/`, newProductData, {
             headers: { "Content-Type": "application/json" },
           });
         }
@@ -228,42 +228,14 @@ export default function Page() {
   };
 
   const selectedFile = (e) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const file = e.target.files[0];
-      setImage(file);
-      setFileName(file.name);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleUpload = async () => {
-    try {
-      const formData = new FormData();
-      formData.append("image", image);
-
-      const res = await axios.post("/api/product/upload", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-
-      if (res.data.newName !== undefined) {
-        return res.data.newName;
-      } else {
-        throw new Error("Failed to get uploaded image name");
-      }
-    } catch (err) {
-      errorAlert(err);
-    }
+    setFile(e.target.files[0]);
   };
 
   const showImage = (item) => {
     if (item.image && item.image !== "") {
       return (
         <img
-          src={"/uploads/" + item.image}
+          src={item.image}
           alt=""
           className="object-cover rounded"
           width="150px"
@@ -389,34 +361,17 @@ export default function Page() {
             <label className="block text-gray-700 text-sm font-bold mb-2">
               Upload Image
             </label>
-            <div className="flex items-center">
-              <label className="cursor-pointer flex items-center bg-gray-800 hover:bg-gray-900 text-white font-bold py-2 px-4 rounded">
-                <FaUpload className="mr-2" />
-                <span>Upload</span>
-                <input type="file" className="hidden" onChange={selectedFile} />
-              </label>
-              <span className="ml-2">{fileName || "No file chosen"}</span>
-            </div>
+            <input type="file" onChange={selectedFile} />
           </div>
-          {imagePreview ? (
-              <div className="mt-4 mb-4">
-                <img
-                  src={imagePreview}
-                  alt="Selected Image"
-                  className="max-w-full h-auto rounded"
-                  width='150px'
-                />
-              </div>
-            ) : (
-              showImage(product)
-            )}
-          <button
-            className="bg-blue-500 hover:bg-blue-400 text-white font-bold py-2 px-4 rounded flex justify-center items-center"
-            type="submit"
-          >
-            <FaCheck className="mr-1" />
-            Save
-          </button>
+          <div className="mb-4">
+            <button
+              className="bg-blue-500 hover:bg-blue-400 text-white font-bold py-2 px-4 rounded flex justify-center items-center"
+              type="submit"
+            >
+              <FaCheck className="mr-1" />
+              Save
+            </button>
+          </div>
         </form>
       </MyModal>
 

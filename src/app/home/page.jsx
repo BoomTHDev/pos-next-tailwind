@@ -58,7 +58,7 @@ export default function Page() {
   const showImage = (item) => {
     let imgPath = "/default-image.png";
     if (item.image) {
-      imgPath = "/uploads/" + item.image;
+      imgPath = item.image;
     }
 
     return (
